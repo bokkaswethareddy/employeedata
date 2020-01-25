@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="emplyee_dataFlow" doc:id="ac3ca5fd-bab8-4cee-975a-503f369b259f" >
+		<http:listener doc:name="Listener" doc:id="e5d90be0-2f09-4cdf-a527-27f3f100a80e" config-ref="HTTP_Listener_config" path="/employee"/>
+		<http:request method="GET" doc:name="Request" doc:id="74d698f5-0048-40e8-9a54-b568b816fbaf" path='/${httpreqt.url}' config-ref="HTTP_Request_configuration"/>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="e3c44507-b4af-4653-a8dc-5fbfb88b52c4" />
+		<ee:transform doc:name="Transform Message" doc:id="a901509b-b3d2-4435-b6ce-a875fa859403" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="emplyee_dataBatch_Job" doc:id="aff82943-0a22-472e-b38a-0caeab7bfb5a" >
+			<batch:process-records >
+				<batch:step name="Batch_Step1" doc:id="40a01804-9ba1-4021-a1ec-611fde11aef1" >
+					<db:bulk-insert doc:name="Bulk insert" doc:id="73cc3c52-9697-4f6e-a7f7-3ce91d5a104f" config-ref="Database_Config">
+						<db:bulk-input-parameters ><![CDATA[#[[{
+	id: payload.id,
+	employee_name: payload.employee_name,
+	employee_salary: payload.employee_salary,
+	employee_age:payload.employee_age,
+	profile_image:payload.profile_image
+	}]]]]></db:bulk-input-parameters>
+						<db:sql >INSERT INTO employee_data(id,employee_name,employee_salary,employee_age,profile_image) 
+VALUES (:id,:employee_name,:employee_salary,:employee_age,:profile_image)</db:sql>
+					</db:bulk-insert>
+					<ee:transform doc:name="Transform Message" doc:id="5a3e9ac0-4f86-4ff6-b884-f1d34656c29c" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="e64e0336-1a47-4ba1-9cb4-0b22b7f484d1" message="#[payload]"/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>

@@ -1,0 +1,13 @@
+http:
+  port: "8081"
+  
+httpreqt:
+  host: "dummy.restapiexample.com"
+  url: "api/v1/employees"
+  
+db:
+  host: "db4free.net"
+  port: "3306"
+  username: "bokkaswethareddy"
+  password: "Vareenya@123"
+  database: "bokkaswethareddy"
